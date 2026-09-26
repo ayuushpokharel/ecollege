@@ -1,0 +1,457 @@
+diff --git a/.gitignore b/.gitignore
+index 2ea251a..f15460c 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -24,4 +24,5 @@ yarn-debug.log*
+ yarn-error.log*
+ 
+ temp
+-backend/media/*
+\ No newline at end of file
++backend/media/*
++!backend/media/.gitkeep
+\ No newline at end of file
+diff --git a/backend/Database/db.js b/backend/Database/db.js
+index 163f950..041512c 100644
+--- a/backend/Database/db.js
++++ b/backend/Database/db.js
+@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
+ const mongoURI = process.env.MONGODB_URI;
+ 
+ const connectToMongo = () => {
+-  mongoose
++  return mongoose
+     .connect(mongoURI, { useNewUrlParser: true })
+     .then(() => {
+       console.log("Connected to MongoDB Successfully");
+diff --git a/backend/admin-seeder.js b/backend/admin-seeder.js
+index a63fd65..2ff1d90 100644
+--- a/backend/admin-seeder.js
++++ b/backend/admin-seeder.js
+@@ -1,5 +1,5 @@
+ const adminDetails = require("./models/details/admin-details.model");
+-const connectToMongo = require("./database/db");
++const connectToMongo = require("./Database/db");
+ const mongoose = require("mongoose");
+ 
+ const seedData = async () => {
+diff --git a/backend/index.js b/backend/index.js
+index 2e4b676..11982dc 100644
+--- a/backend/index.js
++++ b/backend/index.js
+@@ -1,9 +1,9 @@
+-const connectToMongo = require("./database/db");
++const connectToMongo = require("./Database/db");
+ const express = require("express");
+ const app = express();
+ const path = require("path");
+ connectToMongo();
+-const port = 4000 || process.env.PORT;
++const port = process.env.PORT || 4000;
+ var cors = require("cors");
+ 
+ app.use(
+diff --git a/backend/media/.gitkeep b/backend/media/.gitkeep
+new file mode 100644
+index 0000000..e69de29
+diff --git a/backend/utils/SendMail.js b/backend/utils/SendMail.js
+index e27c8d3..5f329bb 100644
+--- a/backend/utils/SendMail.js
++++ b/backend/utils/SendMail.js
+@@ -11,7 +11,7 @@ const sendResetMail = async (email, resetToken, type) => {
+     });
+ 
+     const mailOptions = {
+-      from: process.env.EMAIL,
++      from: process.env.NODEMAILER_EMAIL,
+       to: email,
+       subject: "Password Reset Request",
+       html: `
+diff --git a/frontend/src/Screens/Admin/Admin.jsx b/frontend/src/Screens/Admin/Admin.jsx
+index 04ee4ed..96b6c68 100644
+--- a/frontend/src/Screens/Admin/Admin.jsx
++++ b/frontend/src/Screens/Admin/Admin.jsx
+@@ -43,6 +43,7 @@ const Admin = () => {
+ 
+   useEffect(() => {
+     getAdminsHandler();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+ 
+   const getAdminsHandler = async () => {
+diff --git a/frontend/src/Screens/Admin/Branch.jsx b/frontend/src/Screens/Admin/Branch.jsx
+index 883ace6..da12745 100644
+--- a/frontend/src/Screens/Admin/Branch.jsx
++++ b/frontend/src/Screens/Admin/Branch.jsx
+@@ -19,7 +19,6 @@ const Branch = () => {
+   const [selectedBranchId, setSelectedBranchId] = useState(null);
+   const [isEditing, setIsEditing] = useState(false);
+   const [dataLoading, setDataLoading] = useState(false);
+-  const [processLoading, setProcessLoading] = useState(false);
+ 
+   useEffect(() => {
+     getBranchHandler();
+@@ -90,7 +89,7 @@ const Branch = () => {
+       }
+     } catch (error) {
+       toast.dismiss();
+-      toast.error(error.response.data.message);
++      toast.error(error.response?.data?.message || "Something went wrong");
+     }
+   };
+ 
+@@ -132,7 +131,7 @@ const Branch = () => {
+       }
+     } catch (error) {
+       toast.dismiss();
+-      toast.error(error.response.data.message);
++      toast.error(error.response?.data?.message || "Something went wrong");
+     }
+   };
+ 
+diff --git a/frontend/src/Screens/Admin/Faculty.jsx b/frontend/src/Screens/Admin/Faculty.jsx
+index 015582c..e4f13a9 100644
+--- a/frontend/src/Screens/Admin/Faculty.jsx
++++ b/frontend/src/Screens/Admin/Faculty.jsx
+@@ -49,6 +49,7 @@ const Faculty = () => {
+   useEffect(() => {
+     getFacultyHandler();
+     getBranchHandler();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+ 
+   const getBranchHandler = async () => {
+diff --git a/frontend/src/Screens/Admin/Home.jsx b/frontend/src/Screens/Admin/Home.jsx
+index 9c31f37..1b019c4 100644
+--- a/frontend/src/Screens/Admin/Home.jsx
++++ b/frontend/src/Screens/Admin/Home.jsx
+@@ -62,6 +62,7 @@ const Home = () => {
+ 
+   useEffect(() => {
+     fetchUserDetails();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [dispatch, userToken]);
+ 
+   useEffect(() => {
+@@ -69,6 +70,7 @@ const Home = () => {
+     const pathMenuId = urlParams.get("page") || "home";
+     const validMenu = MENU_ITEMS.find((item) => item.id === pathMenuId);
+     setSelectedMenu(validMenu ? validMenu.id : "home");
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [location.pathname]);
+ 
+   const getMenuItemClass = (menuId) => {
+diff --git a/frontend/src/Screens/Admin/Student.jsx b/frontend/src/Screens/Admin/Student.jsx
+index 8a95f25..746f034 100644
+--- a/frontend/src/Screens/Admin/Student.jsx
++++ b/frontend/src/Screens/Admin/Student.jsx
+@@ -53,6 +53,7 @@ const Student = () => {
+ 
+   useEffect(() => {
+     getBranchHandler();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+ 
+   const getBranchHandler = async () => {
+@@ -487,7 +488,7 @@ const Student = () => {
+         </div>
+       )}
+ 
+-      {branches.length == 0 && (
++      {branches.length === 0 && (
+         <div className="flex justify-center items-center flex-col w-full mt-24">
+           <CgDanger className="w-16 h-16 text-yellow-500 mb-4" />
+           <p className="text-center text-lg">
+diff --git a/frontend/src/Screens/Admin/Subject.jsx b/frontend/src/Screens/Admin/Subject.jsx
+index 94bf631..df2cc87 100644
+--- a/frontend/src/Screens/Admin/Subject.jsx
++++ b/frontend/src/Screens/Admin/Subject.jsx
+@@ -30,6 +30,7 @@ const Subject = () => {
+   useEffect(() => {
+     getSubjectHandler();
+     getBranchHandler();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+ 
+   const getSubjectHandler = async () => {
+@@ -123,7 +124,7 @@ const Subject = () => {
+       }
+     } catch (error) {
+       toast.dismiss();
+-      toast.error(error.response.data.message);
++      toast.error(error.response?.data?.message || "Something went wrong");
+     } finally {
+       setDataLoading(false);
+     }
+@@ -184,7 +185,7 @@ const Subject = () => {
+       }
+     } catch (error) {
+       toast.dismiss();
+-      toast.error(error.response.data.message);
++      toast.error(error.response?.data?.message || "Something went wrong");
+     } finally {
+       setDataLoading(false);
+     }
+@@ -202,7 +203,7 @@ const Subject = () => {
+       </div>
+       {dataLoading && <Loading />}
+ 
+-      {!dataLoading && branch.length == 0 && (
++      {!dataLoading && branch.length === 0 && (
+         <div className="flex justify-center items-center flex-col w-full mt-24">
+           <CgDanger className="w-16 h-16 text-yellow-500 mb-4" />
+           <p className="text-center text-lg">
+diff --git a/frontend/src/Screens/Exam.jsx b/frontend/src/Screens/Exam.jsx
+index 7cf7408..4adf37f 100644
+--- a/frontend/src/Screens/Exam.jsx
++++ b/frontend/src/Screens/Exam.jsx
+@@ -33,6 +33,7 @@ const Exam = () => {
+ 
+   useEffect(() => {
+     getExamsHandler();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+ 
+   const getExamsHandler = async () => {
+@@ -120,7 +121,7 @@ const Exam = () => {
+       }
+     } catch (error) {
+       toast.dismiss();
+-      toast.error(error.response.data.message);
++      toast.error(error.response?.data?.message || "Something went wrong");
+     } finally {
+       setProcessLoading(false);
+     }
+@@ -179,7 +180,7 @@ const Exam = () => {
+       }
+     } catch (error) {
+       toast.dismiss();
+-      toast.error(error.response.data.message);
++      toast.error(error.response?.data?.message || "Something went wrong");
+     }
+   };
+ 
+diff --git a/frontend/src/Screens/Faculty/AddMarks.jsx b/frontend/src/Screens/Faculty/AddMarks.jsx
+index e735776..e89bdea 100644
+--- a/frontend/src/Screens/Faculty/AddMarks.jsx
++++ b/frontend/src/Screens/Faculty/AddMarks.jsx
+@@ -8,7 +8,6 @@ const AddMarks = () => {
+   const [branches, setBranches] = useState([]);
+   const [dataLoading, setDataLoading] = useState(false);
+   const userToken = localStorage.getItem("userToken");
+-  const [students, setStudents] = useState([]);
+   const [subjects, setSubjects] = useState([]);
+   const [selectedBranch, setSelectedBranch] = useState(null);
+   const [selectedSubject, setSelectedSubject] = useState(null);
+@@ -117,7 +116,6 @@ const AddMarks = () => {
+   const searchStudents = async () => {
+     setDataLoading(true);
+     toast.loading("Searching students...");
+-    setStudents([]);
+     try {
+       const response = await axiosWrapper.get(
+         `/marks/students?branch=${selectedBranch?._id}&subject=${selectedSubject?._id}&semester=${selectedSemester}&examId=${selectedExam?._id}`,
+@@ -130,11 +128,9 @@ const AddMarks = () => {
+       if (response.data.success) {
+         if (response.data.data.length === 0) {
+           toast.error("No students found!");
+-          setStudents([]);
+           setMasterMarksData([]);
+         } else {
+           toast.success("Students found!");
+-          setStudents(response.data.data);
+           const initialMarksData = {};
+           response.data.data.forEach((student) => {
+             initialMarksData[student._id] = student.obtainedMarks || "";
+@@ -155,44 +151,6 @@ const AddMarks = () => {
+     }
+   };
+ 
+-  const getMarks = async (e) => {
+-    setDataLoading(true);
+-    toast.loading("Getting marks...");
+-    setMasterMarksData([]);
+-    try {
+-      const response = await axiosWrapper.get(
+-        `/marks?semester=${selectedSemester}&examId=${selectedExam?._id}`,
+-        {
+-          headers: { Authorization: `Bearer ${userToken}` },
+-        }
+-      );
+-
+-      toast.dismiss();
+-      if (response.data.success) {
+-        toast.success("Marks found!");
+-        const combinedData = students.map((student) => {
+-          const marks = response.data.data.find(
+-            (mark) => mark.student._id === student._id
+-          );
+-          if (marks) {
+-            return { ...student, obtainedMarks: marks.obtainedMarks };
+-          } else {
+-            return { ...student, obtainedMarks: 0 };
+-          }
+-        });
+-        setMasterMarksData(combinedData);
+-      } else {
+-        toast.error(response.data.message);
+-      }
+-    } catch (error) {
+-      toast.dismiss();
+-      toast.error(error.response?.data?.message || "Error searching students");
+-      console.error("Search error:", error);
+-    } finally {
+-      setDataLoading(false);
+-    }
+-  };
+-
+   const handleSubmit = async () => {
+     if (!consent) {
+       toast.error("Please confirm the consent before submitting");
+@@ -247,7 +205,6 @@ const AddMarks = () => {
+ 
+   const handleBack = () => {
+     setShowSearch(true);
+-    setStudents([]);
+     setMasterMarksData([]);
+     setMarksData({});
+     setConsent(false);
+@@ -259,18 +216,21 @@ const AddMarks = () => {
+ 
+   useEffect(() => {
+     fetchBranches();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [userToken]);
+ 
+   useEffect(() => {
+     if (selectedBranch) {
+       fetchSubjects();
+     }
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [selectedBranch]);
+ 
+   useEffect(() => {
+     if (selectedSemester) {
+       fetchExams();
+     }
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [selectedSemester]);
+ 
+   return (
+diff --git a/frontend/src/Screens/Faculty/Material.jsx b/frontend/src/Screens/Faculty/Material.jsx
+index a6e0f3a..4695ece 100644
+--- a/frontend/src/Screens/Faculty/Material.jsx
++++ b/frontend/src/Screens/Faculty/Material.jsx
+@@ -32,8 +32,6 @@ const Material = () => {
+     branch: "",
+     type: "",
+   });
+-  const [error, setError] = useState(null);
+-
+   useEffect(() => {
+     fetchSubjects();
+     fetchBranches();
+diff --git a/frontend/src/Screens/Faculty/Timetable.jsx b/frontend/src/Screens/Faculty/Timetable.jsx
+index 22b1608..eccf532 100644
+--- a/frontend/src/Screens/Faculty/Timetable.jsx
++++ b/frontend/src/Screens/Faculty/Timetable.jsx
+@@ -1,9 +1,7 @@
+ import React, { useEffect, useState } from "react";
+-import { FiUpload } from "react-icons/fi";
+-import { MdOutlineDelete, MdEdit, MdViewComfy, MdLink } from "react-icons/md";
++import { MdOutlineDelete, MdEdit, MdLink } from "react-icons/md";
+ import { IoMdAdd, IoMdClose } from "react-icons/io";
+ import Heading from "../../components/Heading";
+-import { AiOutlineClose } from "react-icons/ai";
+ import toast from "react-hot-toast";
+ import axiosWrapper from "../../utils/AxiosWrapper";
+ import DeleteConfirm from "../../components/DeleteConfirm";
+@@ -137,6 +135,7 @@ const Timetable = () => {
+   useEffect(() => {
+     getBranchHandler();
+     getTimetablesHandler();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+ 
+   const getBranchHandler = async () => {
+diff --git a/frontend/src/Screens/Login.jsx b/frontend/src/Screens/Login.jsx
+index f7878bb..dc6e263 100644
+--- a/frontend/src/Screens/Login.jsx
++++ b/frontend/src/Screens/Login.jsx
+@@ -1,6 +1,5 @@
+ import React, { useState, useEffect } from "react";
+ import { FiLogIn } from "react-icons/fi";
+-import axios from "axios";
+ import { Link, useNavigate, useSearchParams } from "react-router-dom";
+ import toast, { Toaster } from "react-hot-toast";
+ import { setUserToken } from "../redux/actions";
+diff --git a/frontend/src/Screens/Notice.jsx b/frontend/src/Screens/Notice.jsx
+index a27c9f6..1debc33 100644
+--- a/frontend/src/Screens/Notice.jsx
++++ b/frontend/src/Screens/Notice.jsx
+@@ -61,6 +61,7 @@ const Notice = () => {
+ 
+   useEffect(() => {
+     getNotices();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [router.pathname]);
+ 
+   const openAddModal = () => {
+diff --git a/frontend/src/Screens/Student/Home.jsx b/frontend/src/Screens/Student/Home.jsx
+index fac9bd8..241682f 100644
+--- a/frontend/src/Screens/Student/Home.jsx
++++ b/frontend/src/Screens/Student/Home.jsx
+@@ -58,6 +58,7 @@ const Home = () => {
+ 
+   useEffect(() => {
+     fetchUserDetails();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [dispatch, userToken]);
+ 
+   const getMenuItemClass = (menuId) => {
+@@ -98,6 +99,7 @@ const Home = () => {
+     const pathMenuId = urlParams.get("page") || "home";
+     const validMenu = MENU_ITEMS.find((item) => item.id === pathMenuId);
+     setSelectedMenu(validMenu ? validMenu.id : "home");
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [location.pathname]);
+ 
+   const handleMenuClick = (menuId) => {
+diff --git a/frontend/src/Screens/Student/Material.jsx b/frontend/src/Screens/Student/Material.jsx
+index 1a40c77..e06972f 100644
+--- a/frontend/src/Screens/Student/Material.jsx
++++ b/frontend/src/Screens/Student/Material.jsx
+@@ -19,10 +19,12 @@ const Material = () => {
+ 
+   useEffect(() => {
+     fetchSubjects();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+ 
+   useEffect(() => {
+     fetchMaterials();
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [filters]);
+ 
+   const fetchSubjects = async () => {
+diff --git a/frontend/src/Screens/Student/Timetable.jsx b/frontend/src/Screens/Student/Timetable.jsx
+index 8da1cf8..2d526af 100644
+--- a/frontend/src/Screens/Student/Timetable.jsx
++++ b/frontend/src/Screens/Student/Timetable.jsx
+@@ -1,4 +1,3 @@
+-import axios from "axios";
+ import React, { useEffect, useState } from "react";
+ import { FiDownload } from "react-icons/fi";
+ import Heading from "../../components/Heading";
+diff --git a/frontend/src/Screens/Student/ViewMarks.jsx b/frontend/src/Screens/Student/ViewMarks.jsx
+index 08e0936..05cfac5 100644
+--- a/frontend/src/Screens/Student/ViewMarks.jsx
++++ b/frontend/src/Screens/Student/ViewMarks.jsx
+@@ -39,6 +39,7 @@ const ViewMarks = () => {
+ 
+   useEffect(() => {
+     fetchMarks(userData?.semester || 1);
++    // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+ 
+   const handleSemesterChange = (e) => {

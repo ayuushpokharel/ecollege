@@ -19,7 +19,6 @@ const Branch = () => {
   const [selectedBranchId, setSelectedBranchId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
-  const [processLoading, setProcessLoading] = useState(false);
 
   useEffect(() => {
     getBranchHandler();
@@ -90,7 +89,7 @@ const Branch = () => {
       }
     } catch (error) {
       toast.dismiss();
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
 
@@ -132,7 +131,7 @@ const Branch = () => {
       }
     } catch (error) {
       toast.dismiss();
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
 

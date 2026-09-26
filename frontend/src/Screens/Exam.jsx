@@ -33,6 +33,7 @@ const Exam = () => {
 
   useEffect(() => {
     getExamsHandler();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getExamsHandler = async () => {
@@ -120,7 +121,7 @@ const Exam = () => {
       }
     } catch (error) {
       toast.dismiss();
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Something went wrong");
     } finally {
       setProcessLoading(false);
     }
@@ -179,7 +180,7 @@ const Exam = () => {
       }
     } catch (error) {
       toast.dismiss();
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
 

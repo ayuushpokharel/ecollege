@@ -8,7 +8,6 @@ const AddMarks = () => {
   const [branches, setBranches] = useState([]);
   const [dataLoading, setDataLoading] = useState(false);
   const userToken = localStorage.getItem("userToken");
-  const [students, setStudents] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [selectedSubject, setSelectedSubject] = useState(null);
@@ -117,7 +116,6 @@ const AddMarks = () => {
   const searchStudents = async () => {
     setDataLoading(true);
     toast.loading("Searching students...");
-    setStudents([]);
     try {
       const response = await axiosWrapper.get(
         `/marks/students?branch=${selectedBranch?._id}&subject=${selectedSubject?._id}&semester=${selectedSemester}&examId=${selectedExam?._id}`,
@@ -130,11 +128,9 @@ const AddMarks = () => {
       if (response.data.success) {
         if (response.data.data.length === 0) {
           toast.error("No students found!");
-          setStudents([]);
           setMasterMarksData([]);
         } else {
           toast.success("Students found!");
-          setStudents(response.data.data);
           const initialMarksData = {};
           response.data.data.forEach((student) => {
             initialMarksData[student._id] = student.obtainedMarks || "";
@@ -143,44 +139,6 @@ const AddMarks = () => {
           setMasterMarksData(response.data.data);
           setShowSearch(false);
         }
-      } else {
-        toast.error(response.data.message);
-      }
-    } catch (error) {
-      toast.dismiss();
-      toast.error(error.response?.data?.message || "Error searching students");
-      console.error("Search error:", error);
-    } finally {
-      setDataLoading(false);
-    }
-  };
-
-  const getMarks = async (e) => {
-    setDataLoading(true);
-    toast.loading("Getting marks...");
-    setMasterMarksData([]);
-    try {
-      const response = await axiosWrapper.get(
-        `/marks?semester=${selectedSemester}&examId=${selectedExam?._id}`,
-        {
-          headers: { Authorization: `Bearer ${userToken}` },
-        }
-      );
-
-      toast.dismiss();
-      if (response.data.success) {
-        toast.success("Marks found!");
-        const combinedData = students.map((student) => {
-          const marks = response.data.data.find(
-            (mark) => mark.student._id === student._id
-          );
-          if (marks) {
-            return { ...student, obtainedMarks: marks.obtainedMarks };
-          } else {
-            return { ...student, obtainedMarks: 0 };
-          }
-        });
-        setMasterMarksData(combinedData);
       } else {
         toast.error(response.data.message);
       }
@@ -247,7 +205,6 @@ const AddMarks = () => {
 
   const handleBack = () => {
     setShowSearch(true);
-    setStudents([]);
     setMasterMarksData([]);
     setMarksData({});
     setConsent(false);
@@ -259,18 +216,21 @@ const AddMarks = () => {
 
   useEffect(() => {
     fetchBranches();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userToken]);
 
   useEffect(() => {
     if (selectedBranch) {
       fetchSubjects();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBranch]);
 
   useEffect(() => {
     if (selectedSemester) {
       fetchExams();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSemester]);
 
   return (
