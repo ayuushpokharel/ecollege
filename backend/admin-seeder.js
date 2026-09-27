@@ -1,5 +1,5 @@
 const adminDetails = require("./models/details/admin-details.model");
-const connectToMongo = require("./Database/db");
+const connectToMongo = require("./database/db");
 const mongoose = require("mongoose");
 
 const seedData = async () => {

@@ -124,22 +124,35 @@ This will create a default admin account with the following credentials:
 ## Project Structure
 
 ```
-college-management-system/
+ecollege/
 ├── backend/
-│   ├── controllers/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── middlewares/
-│   │   ├── utils/
-│   │   └── media/
-│   └── README.md
+│   ├── Database/          # MongoDB connection setup
+│   ├── controllers/        # Request handlers (admin, faculty, student, exam, marks, ...)
+│   │   └── details/        # Handlers for /admin, /faculty, /student "details" resources
+│   ├── middlewares/         # auth (JWT) and multer (file upload) middleware
+│   ├── models/              # Mongoose schemas
+│   │   └── details/
+│   ├── routes/               # Express route definitions
+│   │   └── details/
+│   ├── utils/                # ApiResponse helper, SendMail
+│   ├── media/                # Uploaded files (gitignored, kept via .gitkeep)
+│   ├── admin-seeder.js        # Creates the initial admin account
+│   ├── index.js                # App entry point
+│   └── package.json
 ├── frontend/
+│   ├── public/
+│   │   └── assets/            # Static SVGs used by the UI
 │   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── context/
-│   │   └── utils/
-│   └── public/
+│   │   ├── Screens/            # Page-level components, grouped by role
+│   │   │   ├── Admin/
+│   │   │   ├── Faculty/
+│   │   │   └── Student/
+│   │   ├── components/          # Shared/reusable UI components
+│   │   ├── redux/                # Store, reducer, action creators
+│   │   ├── utils/                  # Axios wrapper
+│   │   ├── App.js                   # Routes
+│   │   └── index.js                  # React entry point
+│   └── package.json
 └── README.md
 ```
 

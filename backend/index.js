@@ -1,4 +1,4 @@
-const connectToMongo = require("./Database/db");
+const connectToMongo = require("./database/db");
 const express = require("express");
 const app = express();
 const path = require("path");
@@ -9,7 +9,7 @@ var cors = require("cors");
 app.use(
   cors({
     origin: process.env.FRONTEND_API_LINK,
-  })
+  }),
 );
 
 app.use(express.json()); //to convert request data to json
