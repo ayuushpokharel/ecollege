@@ -1,4 +1,5 @@
 const studentDetails = require("../../models/details/student-details.model");
+const Branch = require("../../models/branch.model");
 const resetToken = require("../../models/reset-password.model");
 const bcrypt = require("bcryptjs");
 const ApiResponse = require("../../utils/ApiResponse");
@@ -54,23 +55,77 @@ const registerStudentController = async (req, res) => {
   try {
     const profile = req.file.filename;
 
-    const enrollmentNo = Math.floor(100000 + Math.random() * 900000);
-    const email = `${enrollmentNo}@gmail.com`;
+    if (!req.body.branchId) {
+      return ApiResponse.badRequest("Branch is required").send(res);
+    }
 
-    const user = await studentDetails.create({
-      ...req.body,
-      profile,
-      password: "student123",
-      email,
-      enrollmentNo,
-    });
+    const branch = await Branch.findById(req.body.branchId);
+    if (!branch) {
+      return ApiResponse.badRequest("Invalid branch selected").send(res);
+    }
+
+    const branchCode = parseInt(branch.branchId, 10);
+    if (isNaN(branchCode) || branchCode <= 0) {
+      return ApiResponse.badRequest(
+        `Branch ID "${branch.branchId}" must be a positive number to auto-generate enrollment numbers`,
+      ).send(res);
+    }
+
+    // e.g. branch code 1 -> enrollment numbers 101-199, branch code 2 -> 201-299
+    const rangeStart = branchCode * 100;
+    const rangeEnd = rangeStart + 99;
+
+    const MAX_ATTEMPTS = 5;
+    let user = null;
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const lastStudent = await studentDetails
+        .findOne({ enrollmentNo: { $gte: rangeStart, $lte: rangeEnd } })
+        .sort({ enrollmentNo: -1 });
+
+      const nextSequence = lastStudent
+        ? lastStudent.enrollmentNo - rangeStart + 1
+        : 1;
+
+      if (nextSequence > 99) {
+        return ApiResponse.conflict(
+          `Branch "${branch.name}" has reached its maximum of 99 students under the current enrollment number scheme`,
+        ).send(res);
+      }
+
+      const enrollmentNo = rangeStart + nextSequence;
+      const email = `${enrollmentNo}@gmail.com`;
+
+      try {
+        user = await studentDetails.create({
+          ...req.body,
+          profile,
+          password: "student123",
+          email,
+          enrollmentNo,
+        });
+        break;
+      } catch (error) {
+        // 11000 = MongoDB duplicate key error - someone else grabbed this
+        // number concurrently; loop again and pick the next one
+        if (error.code !== 11000) {
+          throw error;
+        }
+      }
+    }
+
+    if (!user) {
+      return ApiResponse.conflict(
+        "Could not generate a unique enrollment number, please try again",
+      ).send(res);
+    }
 
     const sanitizedUser = await studentDetails
       .findById(user._id)
       .select("-__v -password");
 
     return ApiResponse.created(sanitizedUser, "Student Details Added!").send(
-      res
+      res,
     );
   } catch (error) {
     console.error("Add Details Error: ", error);
@@ -115,7 +170,7 @@ const updateDetailsController = async (req, res) => {
 
     if (password && password.length < 8) {
       return ApiResponse.badRequest(
-        "Password must be at least 8 characters long"
+        "Password must be at least 8 characters long",
       ).send(res);
     }
 
@@ -149,7 +204,7 @@ const updateDetailsController = async (req, res) => {
 
       if (existingStudent) {
         return ApiResponse.conflict("Enrollment number already in use").send(
-          res
+          res,
         );
       }
     }
@@ -225,7 +280,7 @@ const sendForgetPasswordEmail = async (req, res) => {
       process.env.JWT_SECRET,
       {
         expiresIn: "10m",
-      }
+      },
     );
 
     await resetToken.deleteMany({
@@ -254,7 +309,7 @@ const updatePasswordHandler = async (req, res) => {
     const { password } = req.body;
     if (!resetId || !password) {
       return ApiResponse.badRequest("Password and ResetId is Required").send(
-        res
+        res,
       );
     }
 
@@ -266,7 +321,7 @@ const updatePasswordHandler = async (req, res) => {
 
     const verifyToken = await jwt.verify(
       resetTkn.resetToken,
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET,
     );
 
     if (!verifyToken) {
@@ -306,11 +361,17 @@ const searchStudentsController = async (req, res) => {
     }
 
     if (name) {
-      query.$or = [
-        { firstName: { $regex: name, $options: "i" } },
-        { middleName: { $regex: name, $options: "i" } },
-        { lastName: { $regex: name, $options: "i" } },
-      ];
+      const nameWords = name.trim().split(/\s+/).filter(Boolean);
+      query.$and = nameWords.map((word) => {
+        const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return {
+          $or: [
+            { firstName: { $regex: escapedWord, $options: "i" } },
+            { middleName: { $regex: escapedWord, $options: "i" } },
+            { lastName: { $regex: escapedWord, $options: "i" } },
+          ],
+        };
+      });
     }
 
     if (semester) {
@@ -332,7 +393,7 @@ const searchStudentsController = async (req, res) => {
     }
 
     return ApiResponse.success(students, "Students found successfully").send(
-      res
+      res,
     );
   } catch (error) {
     console.error("Search Students Error: ", error);
@@ -347,13 +408,13 @@ const updateLoggedInPasswordController = async (req, res) => {
 
     if (!currentPassword || !newPassword) {
       return ApiResponse.badRequest(
-        "Current password and new password are required"
+        "Current password and new password are required",
       ).send(res);
     }
 
     if (newPassword.length < 8) {
       return ApiResponse.badRequest(
-        "New password must be at least 8 characters long"
+        "New password must be at least 8 characters long",
       ).send(res);
     }
 
@@ -364,11 +425,11 @@ const updateLoggedInPasswordController = async (req, res) => {
 
     const isPasswordValid = await bcrypt.compare(
       currentPassword,
-      user.password
+      user.password,
     );
     if (!isPasswordValid) {
       return ApiResponse.unauthorized("Current password is incorrect").send(
-        res
+        res,
       );
     }
 

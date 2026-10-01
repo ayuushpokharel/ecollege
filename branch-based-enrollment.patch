@@ -1,0 +1,110 @@
+diff --git a/backend/controllers/details/student-details.controller.js b/backend/controllers/details/student-details.controller.js
+index 16fb129..02d3ced 100644
+--- a/backend/controllers/details/student-details.controller.js
++++ b/backend/controllers/details/student-details.controller.js
+@@ -1,4 +1,5 @@
+ const studentDetails = require("../../models/details/student-details.model");
++const Branch = require("../../models/branch.model");
+ const resetToken = require("../../models/reset-password.model");
+ const bcrypt = require("bcryptjs");
+ const ApiResponse = require("../../utils/ApiResponse");
+@@ -54,16 +55,70 @@ const registerStudentController = async (req, res) => {
+   try {
+     const profile = req.file.filename;
+ 
+-    const enrollmentNo = Math.floor(100000 + Math.random() * 900000);
+-    const email = `${enrollmentNo}@gmail.com`;
++    if (!req.body.branchId) {
++      return ApiResponse.badRequest("Branch is required").send(res);
++    }
+ 
+-    const user = await studentDetails.create({
+-      ...req.body,
+-      profile,
+-      password: "student123",
+-      email,
+-      enrollmentNo,
+-    });
++    const branch = await Branch.findById(req.body.branchId);
++    if (!branch) {
++      return ApiResponse.badRequest("Invalid branch selected").send(res);
++    }
++
++    const branchCode = parseInt(branch.branchId, 10);
++    if (isNaN(branchCode) || branchCode <= 0) {
++      return ApiResponse.badRequest(
++        `Branch ID "${branch.branchId}" must be a positive number to auto-generate enrollment numbers`
++      ).send(res);
++    }
++
++    // e.g. branch code 1 -> enrollment numbers 101-199, branch code 2 -> 201-299
++    const rangeStart = branchCode * 100;
++    const rangeEnd = rangeStart + 99;
++
++    const MAX_ATTEMPTS = 5;
++    let user = null;
++
++    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
++      const lastStudent = await studentDetails
++        .findOne({ enrollmentNo: { $gte: rangeStart, $lte: rangeEnd } })
++        .sort({ enrollmentNo: -1 });
++
++      const nextSequence = lastStudent
++        ? lastStudent.enrollmentNo - rangeStart + 1
++        : 1;
++
++      if (nextSequence > 99) {
++        return ApiResponse.conflict(
++          `Branch "${branch.name}" has reached its maximum of 99 students under the current enrollment number scheme`
++        ).send(res);
++      }
++
++      const enrollmentNo = rangeStart + nextSequence;
++      const email = `${enrollmentNo}@gmail.com`;
++
++      try {
++        user = await studentDetails.create({
++          ...req.body,
++          profile,
++          password: "student123",
++          email,
++          enrollmentNo,
++        });
++        break;
++      } catch (error) {
++        // 11000 = MongoDB duplicate key error - someone else grabbed this
++        // number concurrently; loop again and pick the next one
++        if (error.code !== 11000) {
++          throw error;
++        }
++      }
++    }
++
++    if (!user) {
++      return ApiResponse.conflict(
++        "Could not generate a unique enrollment number, please try again"
++      ).send(res);
++    }
+ 
+     const sanitizedUser = await studentDetails
+       .findById(user._id)
+diff --git a/backend/models/details/student-details.model.js b/backend/models/details/student-details.model.js
+index 6974f49..189533c 100644
+--- a/backend/models/details/student-details.model.js
++++ b/backend/models/details/student-details.model.js
+@@ -5,6 +5,7 @@ const studentDetailsSchema = new mongoose.Schema(
+     enrollmentNo: {
+       type: Number,
+       required: true,
++      unique: true,
+     },
+     firstName: {
+       type: String,
+@@ -21,6 +22,7 @@ const studentDetailsSchema = new mongoose.Schema(
+     email: {
+       type: String,
+       required: true,
++      unique: true,
+     },
+     phone: {
+       type: String,
